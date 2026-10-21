@@ -19,6 +19,8 @@
    Each day: { id, name, focus, exercises: [{ name, sets, reps, notes }] }
    "Reset to default routine" in the app restores exactly this.
    ===================================================================== */
+// Optional exercises (optional: true) show an "Optional" badge and never count as missed if skipped.
+const PUSHUP_FINISHER = { name: "Push-ups", sets: 2, reps: "AMRAP", notes: "Optional finisher, skip if gassed", optional: true };
 const DEFAULT_ROUTINE = {
   notes: "Rest 60–90 seconds between sets. Use moderate weights with controlled form. Progression: once you hit the top of the rep range on every set, add a small amount of weight next session (e.g. +5 lb / +2.5 kg).",
   days: [
@@ -28,7 +30,8 @@ const DEFAULT_ROUTINE = {
       { name: "Dips",                           sets: 3, reps: "8–12",  notes: "Lean forward slightly for chest" },
       { name: "Lateral Raises",                 sets: 3, reps: "12–15", notes: "Light weight, slow tempo" },
       { name: "Cable or Dumbbell Fly",          sets: 3, reps: "12",    notes: "" },
-      { name: "Seated Dumbbell Shoulder Press", sets: 3, reps: "10–12", notes: "" }
+      { name: "Seated Dumbbell Shoulder Press", sets: 3, reps: "10–12", notes: "" },
+      PUSHUP_FINISHER
     ]},
     { id: "d2", name: "Glutes & Legs", focus: "Lower body", exercises: [
       { name: "Hip Thrusts",            sets: 4, reps: "10–12",          notes: "Pause 1s at the top" },
@@ -73,6 +76,7 @@ const DEMO_CLIPS = [
   { names: ["Lat Pulldowns","Lat Pulldown"], file: "videos/lat-pulldown.mp4", author: "Andrew Kwong (DeltaBolic)", license: "CC BY 3.0" },
   { names: ["Walking Lunges","Lunges","Forward Lunge"], file: "videos/forward-lunge.mp4", author: "U.S. Army (ACFT)", license: "Public domain" },
   { names: ["Cable or Dumbbell Fly","Dumbbell Fly","Dumbbell Flye","Chest Fly"], file: "videos/dumbbell-fly.mp4", author: "Mohamed Ouda", license: "CC BY-SA 3.0" },
+  { names: ["Push-ups","Push-up","Pushups","Press-ups"], file: "videos/push-ups.mp4", author: "Taco fleur", license: "CC BY-SA 4.0" },
   { names: ["Seated Dumbbell Shoulder Press","Dumbbell Shoulder Press","Shoulder Press"], file: "videos/seated-dumbbell-shoulder-press.mp4", author: "Colossus Fitness", license: "CC BY 3.0" }
 ];
 const FORM_CUES = {
@@ -94,9 +98,10 @@ const FORM_CUES = {
   "Face Pulls": ["Rope at face height", "Pull toward the eyes, elbows high", "Rotate the hands back at the end"],
   "Straight-Arm Pulldown": ["Arms nearly straight, slight hip hinge", "Sweep the bar down to the thighs", "Feel the lats, control the way up"],
   "Reverse (Rear Delt) Fly": ["Hinge forward or face a pec-deck", "Raise the arms out wide, slight elbow bend", "Squeeze the rear delts, lower slowly"],
+  "Push-ups": ["Hands just outside shoulders, body in one straight line", "Lower until the chest nearly touches the floor", "Stop 1–2 reps short of failure; drop to knees if needed"],
   "Seated Cable Row": ["Sit tall, slight knee bend", "Pull the handle to the stomach", "Squeeze the shoulder blades, don't rock"]
 };
-const APP_VERSION = "1.2";
+const APP_VERSION = "1.3";
 </script>
 <style>
 :root{
@@ -336,6 +341,12 @@ select.input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w
 .start-hero .sh-icon{width:64px;height:64px;margin:0 auto 12px;border-radius:20px;background:var(--gym-soft);color:var(--gym);display:flex;align-items:center;justify-content:center}
 .btn-xl{height:56px;font-size:17px;border-radius:16px}
 .mini-list{margin-top:8px;border-radius:var(--r);border:1px solid var(--line);background:var(--surface);overflow:hidden}
+.opt-badge{display:inline-flex;align-items:center;height:18px;padding:0 7px;margin-left:8px;border-radius:99px;font-size:10.5px;font-weight:750;letter-spacing:.04em;text-transform:uppercase;vertical-align:2px;color:var(--cali);background:rgba(139,147,255,.14);border:1px solid rgba(139,147,255,.25)}
+.set-badge.opt{background:transparent;color:var(--text3);border:1px dashed var(--line2)}
+.set-prog{display:flex;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--text3);font-weight:600}
+.set-prog b{color:var(--text);font-variant-numeric:tabular-nums}
+.opt-toggle{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;user-select:none}
+.opt-toggle input{width:18px;height:18px;accent-color:var(--cali);margin:0}
 .mini-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-top:1px solid var(--line)}
 .mini-row:first-child{border-top:0}
 .mini-row .nm{flex:1;min-width:0;font-size:14px;font-weight:600}
@@ -591,7 +602,7 @@ select.input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w
     </div>
     <div class="section-title"><h2>Add to Home Screen</h2></div>
     <div class="card pad-lg small muted" style="line-height:1.55">On iPhone, open this page in Safari, tap <b>Share</b>, then <b>Add to Home Screen</b>. On Android Chrome, open the menu and tap <b>Add to Home screen</b>.</div>
-    <p class="tiny faint" style="text-align:center;margin-top:32px">Fitness Evolution · v<span id="appVersion">1.2</span></p>
+    <p class="tiny faint" style="text-align:center;margin-top:32px">Fitness Evolution · v<span id="appVersion">1.3</span></p>
   </section>
 </main>
 
@@ -698,7 +709,14 @@ function normalize(s){
   }
   // Untouched v1.1 default routine → new 6-exercise default (indexes of existing exercises are unchanged).
   if (routineSig(s.routine) === V11_DEFAULT_SIG) { const notes = s.routine.notes; s.routine = freshRoutine(); if (notes) s.routine.notes = DEFAULT_ROUTINE.notes; }
-  for (const d of s.routine.days) for (const e of d.exercises || []) { delete e.video; if (e.clip && typeof e.clip !== "string") delete e.clip; }
+  for (const d of s.routine.days) for (const e of d.exercises || []) { delete e.video; if (e.clip && typeof e.clip !== "string") delete e.clip; if (e.optional) e.optional = true; else delete e.optional; }
+  // v1.3: add the optional Push-ups finisher to Day 1 once (flag stops it coming back if he deletes it).
+  s.migrations = s.migrations || {};
+  if (!s.migrations.pushupFinisher) {
+    const d1 = s.routine.days.find(d => d.name === "Chest & Shoulders") || s.routine.days.find(d => d.id === "d1");
+    if (d1 && !(d1.exercises || []).some(e => /push.?up/i.test(e.name))) (d1.exercises = d1.exercises || []).push(clone(PUSHUP_FINISHER));
+    s.migrations.pushupFinisher = true;
+  }
   const ss = s.session;
   if (ss && !(Number.isFinite(ss.startedAt) && /^\d{4}-\d\d-\d\d$/.test(ss.date||""))) delete s.session;
   if (s.session && (typeof s.session.ex !== "object" || !s.session.ex)) s.session.ex = {};
@@ -936,11 +954,12 @@ function ensureEntry(store, e){
 function setExHTML(day, i, store, ctxDate){
   const e = day.exercises[i], k = normName(e.name), ent = ensureEntry(store, e), last = lastSession(k, ctxDate);
   const done = ent.sets.filter(s => s.d).length, open = openSets.has(k);
-  const ph = si => { const ls = last?.sets; if (!ls?.length) return { r:"Reps", w: unit() }; const s = ls[Math.min(si, ls.length-1)]; return { r: s.r ? fmtNum(s.r) : "Reps", w: s.w ? fmtW(s.w) : unit() }; };
+  const wph = e.optional || /push.?up|pull.?up|dip/i.test(e.name) ? "BW" : unit();
+  const ph = si => { const ls = last?.sets; if (!ls?.length) return { r:"Reps", w: wph }; const s = ls[Math.min(si, ls.length-1)]; return { r: s.r ? fmtNum(s.r) : "Reps", w: s.w ? fmtW(s.w) : wph }; };
   return `<div class="set-ex ${open?"open":""}" data-k="${esc(k)}" data-i="${i}">
     <div class="set-head" role="button" tabindex="0" aria-expanded="${open}"><button class="demo-icon ${hasDemo(e)?"has":""}" data-demo-day="${esc(day.id)}" data-demo-i="${i}" aria-label="Demo for ${esc(e.name)}">${icon("play",12)}</button>
-      <div class="nm">${esc(e.name)}<small>${esc(e.sets)} × ${esc(e.reps)}${last ? ` · Last: ${esc(fmtSet(last.best))}` : ""}</small></div>
-      <span class="set-badge ${done && done===ent.sets.length?"full":""}">${done}/${ent.sets.length}</span><span class="chev">${icon("down",14)}</span></div>
+      <div class="nm">${esc(e.name)}${e.optional?`<span class="opt-badge">Optional</span>`:""}<small>${esc(e.sets)} × ${esc(e.reps)}${last ? ` · Last: ${esc(fmtSet(last.best))}` : ""}</small></div>
+      <span class="set-badge ${badgeCls(e, done, ent.sets.length)}">${badgeTxt(e, done, ent.sets.length)}</span><span class="chev">${icon("down",14)}</span></div>
     <div class="set-body"><div class="set-grid hd"><span>Set</span><span>Reps</span><span>${unit()}</span><span></span></div>
       ${ent.sets.map((s, si) => { const p = ph(si); return `<div class="set-grid set-row ${s.d?"done":""}" data-si="${si}"><span class="sn">${si+1}</span>
         <input class="input" data-f="r" inputmode="decimal" placeholder="${esc(p.r)}" value="${s.r ?? ""}" aria-label="Set ${si+1} reps">
@@ -949,12 +968,23 @@ function setExHTML(day, i, store, ctxDate){
       <div class="set-actions"><button class="btn btn-ghost sm" data-a="add">${icon("plus",14)}Add set</button><button class="btn btn-ghost sm" data-a="rm" ${ent.sets.length<=1?"disabled":""}>${icon("trash",14)}Remove set</button></div>
     </div></div>`;
 }
+const badgeTxt = (e, done, n) => e?.optional && !done ? "Skip ok" : `${done}/${n}`;
+const badgeCls = (e, done, n) => e?.optional && !done ? "opt" : done && done === n ? "full" : "";
+// Required-set progress: optional exercises never count as missed / incomplete.
+function reqProgress(day, store){
+  let done = 0, total = 0;
+  for (const e of day.exercises) { if (e.optional) continue; const sets = store[normName(e.name)]?.sets; const n = sets?.length || Math.max(1, parseInt(e.sets) || 3); total += n; done += (sets || []).filter(x => x.d).length; }
+  return { done, total, complete: total > 0 && done >= total };
+}
+const progHTML = (day, store) => { const p = reqProgress(day, store), nOpt = day.exercises.filter(e => e.optional).length;
+  return `<span>Sets done <b>${p.done}/${p.total}</b>${p.complete ? " · complete" : ""}</span>${nOpt ? `<span>optional not counted</span>` : ""}`; };
 function setTableHTML(day, store, ctxDate){
   if (!day || !day.exercises.length) return `<p class="small faint" style="margin:8px 0 0">No exercises in this day yet.</p>`;
-  return `<div class="card set-table" style="padding:0">${day.exercises.map((_, i) => setExHTML(day, i, store, ctxDate)).join("")}</div>`;
+  return `<div class="card set-table" style="padding:0"><div class="set-prog" data-prog>${progHTML(day, store)}</div>${day.exercises.map((_, i) => setExHTML(day, i, store, ctxDate)).join("")}</div>`;
 }
 function bindSetTable(root, day, store, ctxDate, onChange){
   const tbl = $(".set-table", root); if (!tbl) return;
+  const updProg = () => { const el = $("[data-prog]", tbl); if (el) el.innerHTML = progHTML(day, store); };
   const rerender = blk => { const n = document.createElement("div"); n.innerHTML = setExHTML(day, +blk.dataset.i, store, ctxDate); const nb = n.firstElementChild; blk.replaceWith(nb); bindDemoButtons(nb); return nb; };
   tbl.addEventListener("input", ev => {
     const inp = ev.target.closest("input[data-f]"); if (!inp) return;
@@ -971,11 +1001,11 @@ function bindSetTable(root, day, store, ctxDate, onChange){
       s.d = !s.d;
       if (s.d) for (const f of ["r","w"]) { const inp = $(`[data-f=${f}]`, row); if (!inp.value && num(inp.placeholder) != null) { inp.value = inp.placeholder; if (f==="r") s.r = num(inp.placeholder); else s.w = fromDisp(num(inp.placeholder)); } }
       row.classList.toggle("done", s.d);
-      const done = ent.sets.filter(x => x.d).length, b = $(".set-badge", blk); b.textContent = `${done}/${ent.sets.length}`; b.classList.toggle("full", done===ent.sets.length);
+      const e = day.exercises[+blk.dataset.i], done = ent.sets.filter(x => x.d).length, b = $(".set-badge", blk); b.textContent = badgeTxt(e, done, ent.sets.length); b.className = "set-badge " + badgeCls(e, done, ent.sets.length); updProg();
       onChange(); return;
     }
-    if (a === "add") { const prev = ent.sets[ent.sets.length-1]; ent.sets.push({ r: prev?.r ?? null, w: prev?.w ?? null, d:false }); onChange(); const nb = rerender(blk); $$(".set-row", nb).pop()?.querySelector("input")?.focus(); return; }
-    if (a === "rm") { if (ent.sets.length > 1) { ent.sets.pop(); onChange(); rerender(blk); } return; }
+    if (a === "add") { const prev = ent.sets[ent.sets.length-1]; ent.sets.push({ r: prev?.r ?? null, w: prev?.w ?? null, d:false }); onChange(); updProg(); const nb = rerender(blk); $$(".set-row", nb).pop()?.querySelector("input")?.focus(); return; }
+    if (a === "rm") { if (ent.sets.length > 1) { ent.sets.pop(); onChange(); updProg(); rerender(blk); } return; }
     if (ev.target.closest(".set-head") && !ev.target.closest("[data-demo-day]")) {
       const k = blk.dataset.k; if (openSets.has(k)) openSets.delete(k); else openSets.add(k);
       blk.classList.toggle("open", openSets.has(k)); $(".set-head", blk).setAttribute("aria-expanded", openSets.has(k));
@@ -1068,12 +1098,12 @@ function renderRoutine(){
     body.innerHTML = `<div class="card empty-state" style="margin-top:16px"><div class="ei">${icon("layers",28)}</div><h3>No routine days</h3><p>Tap Edit, then Add day to build your program, or restore the default 4-day split.</p><button class="btn btn-ghost sm" style="margin-top:16px" id="resetEmpty">${icon("reset",16)}Reset to default</button></div>`;
     $("#resetEmpty").onclick = resetRoutine; return;
   }
-  const d = days[curDay], totalSets = d.exercises.reduce((a,e)=>a+(parseInt(e.sets)||0),0);
+  const d = days[curDay], req = d.exercises.filter(e => !e.optional), nOpt = d.exercises.length - req.length, totalSets = req.reduce((a,e)=>a+(parseInt(e.sets)||0),0);
   if (!editing){
     body.innerHTML = `
       <div class="card day-hero"><div class="num">Day ${curDay+1}${d.focus?` · ${esc(d.focus)}`:""}</div><h2 style="font-size:26px;margin-top:6px;letter-spacing:-.02em">${esc(d.name)}</h2>
-        <div class="day-meta"><span>${icon("layers",14)}${plural(d.exercises.length,"exercise")}</span><span>${icon("dumbbell",14)}${plural(totalSets,"set")}</span><span>${icon("clock",14)}~${Math.max(10,Math.round(totalSets*2.5/5)*5)} min</span></div></div>
-      ${d.exercises.length ? `<div class="ex-list">${d.exercises.map((e,i)=>`<div class="ex" data-xk="${esc(normName(e.name))}" data-xn="${esc(e.name)}" role="button" tabindex="0" style="cursor:pointer"><div class="idx">${i+1}</div><div class="body"><div class="name">${esc(e.name)}</div>${e.notes?`<div class="note">${esc(e.notes)}</div>`:""}<button class="demo-btn ${hasDemo(e)?"has":""}" data-demo-day="${esc(d.id)}" data-demo-i="${i}">${icon(hasDemo(e)?"play":"info",11)}${hasDemo(e)?"Watch demo":"Form tips"}</button></div><div class="sr"><b>${esc(e.sets)} × ${esc(e.reps)}</b><span>sets × reps</span></div></div>`).join("")}</div>`
+        <div class="day-meta"><span>${icon("layers",14)}${plural(req.length,"exercise")}${nOpt?` + ${nOpt} optional`:""}</span><span>${icon("dumbbell",14)}${plural(totalSets,"set")}</span><span>${icon("clock",14)}~${Math.max(10,Math.round(totalSets*2.5/5)*5)} min</span></div></div>
+      ${d.exercises.length ? `<div class="ex-list">${d.exercises.map((e,i)=>`<div class="ex" data-xk="${esc(normName(e.name))}" data-xn="${esc(e.name)}" role="button" tabindex="0" style="cursor:pointer"><div class="idx">${i+1}</div><div class="body"><div class="name">${esc(e.name)}${e.optional?`<span class="opt-badge">Optional</span>`:""}</div>${e.notes?`<div class="note">${esc(e.notes)}</div>`:""}<button class="demo-btn ${hasDemo(e)?"has":""}" data-demo-day="${esc(d.id)}" data-demo-i="${i}">${icon(hasDemo(e)?"play":"info",11)}${hasDemo(e)?"Watch demo":"Form tips"}</button></div><div class="sr"><b>${esc(e.sets)} × ${esc(e.reps)}</b><span>sets × reps</span></div></div>`).join("")}</div>`
         : `<div class="card empty-state" style="margin-top:12px"><div class="ei">${icon("dumbbell",28)}</div><h3>No exercises yet</h3><p>Tap Edit to add exercises to this day.</p></div>`}
       ${r.notes ? `<div class="tip">${icon("info",18)}<div>${esc(r.notes)}</div></div>` : ""}`;
     bindDemoButtons(body);
@@ -1097,6 +1127,7 @@ function renderRoutine(){
             <div class="edit-tools"><button class="icon-btn sm" data-a="up" ${i===0?"disabled":""} aria-label="Move up">${icon("up",14)}</button><button class="icon-btn sm" data-a="down" ${i===d.exercises.length-1?"disabled":""} aria-label="Move down">${icon("down",14)}</button><button class="icon-btn sm" data-a="del" aria-label="Remove" style="color:var(--danger)">${icon("trash",14)}</button></div></div>
           <div class="edit-row"><input class="input sm" data-f="sets" value="${esc(e.sets)}" inputmode="numeric" placeholder="Sets" style="width:64px;flex:none;text-align:center"><span class="faint">×</span><input class="input sm" data-f="reps" value="${esc(e.reps)}" placeholder="Reps" style="flex:1"></div>
           <div class="edit-row"><input class="input sm" data-f="notes" value="${esc(e.notes||"")}" placeholder="Notes (optional)" style="flex:1"></div>
+          <div class="edit-row"><label class="opt-toggle"><input type="checkbox" data-opt ${e.optional?"checked":""}>Optional exercise <span class="tiny faint">· never counts as missed</span></label></div>
           <div class="edit-row clip-row"><span class="demo-icon ${hasDemo(e)?"has":""}">${icon("play",12)}</span><span class="clip-status">${e.clip ? "Your clip attached" : clipFor(e.name) ? "Built-in demo clip" : "No clip yet · form cues shown"}</span>
             <button class="btn btn-ghost sm" data-a="clip">${icon("video",14)}${e.clip ? "Replace" : "Attach video"}</button>${e.clip ? `<button class="icon-btn sm" data-a="unclip" aria-label="Remove your clip" style="color:var(--danger)">${icon("trash",14)}</button>` : ""}</div>
         </div>`).join("") || `<div class="ex"><span class="small faint">No exercises yet.</span></div>`}</div>
@@ -1110,6 +1141,7 @@ function renderRoutine(){
     $$("#eList .edit-ex").forEach(row => {
       const i = +row.dataset.i;
       $$("input[data-f]", row).forEach(inp => inp.oninput = () => { const f = inp.dataset.f; d.exercises[i][f] = f==="sets" && /^\d+$/.test(inp.value) ? +inp.value : inp.value; save(); });
+      const ot = $("input[data-opt]", row); if (ot) ot.onchange = () => { if (ot.checked) d.exercises[i].optional = true; else delete d.exercises[i].optional; save(); };
       $$("button[data-a]", row).forEach(b => b.onclick = () => {
         const a = b.dataset.a, ex = d.exercises;
         if (a==="up" && i>0) [ex[i-1],ex[i]] = [ex[i],ex[i-1]];
@@ -1361,7 +1393,7 @@ setInterval(tick, 250);   // cheap: only touches the DOM when the displayed seco
 let preDayId = null;
 function exerciseListHTML(day){
   if (!day || !day.exercises.length) return `<p class="small faint" style="margin:8px 0 0">No exercises in this day yet.</p>`;
-  return `<div class="mini-list">${day.exercises.map((e,i) => `<div class="mini-row"><button class="demo-icon ${hasDemo(e)?"has":""}" data-demo-day="${esc(day.id)}" data-demo-i="${i}" aria-label="Demo for ${esc(e.name)}">${icon("play",12)}</button><div class="nm">${esc(e.name)}<small>${esc(e.sets)} × ${esc(e.reps)}${e.notes?` · ${esc(e.notes)}`:""}</small></div></div>`).join("")}</div>`;
+  return `<div class="mini-list">${day.exercises.map((e,i) => `<div class="mini-row"><button class="demo-icon ${hasDemo(e)?"has":""}" data-demo-day="${esc(day.id)}" data-demo-i="${i}" aria-label="Demo for ${esc(e.name)}">${icon("play",12)}</button><div class="nm">${esc(e.name)}${e.optional?`<span class="opt-badge">Optional</span>`:""}<small>${esc(e.sets)} × ${esc(e.reps)}${e.notes?` · ${esc(e.notes)}`:""}</small></div></div>`).join("")}</div>`;
 }
 function daySelectHTML(sel){
   return `<select class="input" id="sDay">${state.routine.days.map((d,i)=>`<option value="${esc(d.id)}" ${d.id===sel?"selected":""}>Day ${i+1} · ${esc(d.name)}</option>`).join("")}</select>`;
