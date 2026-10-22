@@ -1,6 +1,6 @@
 /* Fitness Evolution service worker: cache-first offline support.
    Bump CACHE when you change any of the files below so phones pick up the update. */
-const CACHE = "fitness-evolution-v1.3";
+const CACHE = "fitness-evolution-v1.4";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-180.png", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {

@@ -16,6 +16,7 @@ modifications. The app shows each clip's author and license under the video.
 | Seated Dumbbell Shoulder Press | `videos/seated-dumbbell-shoulder-press.mp4` | Colossus Fitness (Coach Josh) | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) | [File:How To Properly Dumbbell Shoulder Press.webm](https://commons.wikimedia.org/wiki/File:How_To_Properly_Dumbbell_Shoulder_Press.webm) | trimmed to 1:29–1:41, scaled, muted, re-encoded |
 | Cable or Dumbbell Fly | `videos/dumbbell-fly.mp4` | Mohamed Ouda | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/) | [File:DumbbellFlye.gif](https://commons.wikimedia.org/wiki/File:DumbbellFlye.gif) | GIF converted to looping MP4, scaled and padded to 480 px. This derivative is shared under CC BY-SA 3.0. |
 | Push-ups | `videos/push-ups.mp4` | Taco fleur | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | [File:Interval Push-ups.webm](https://commons.wikimedia.org/wiki/File:Interval_Push-ups.webm) | trimmed to 0:04–0:18, scaled, muted, re-encoded. This derivative is shared under CC BY-SA 4.0. |
+| Leg Press | `videos/leg-press.mp4` | Colossus Fitness | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) | [File:How to properly leg press.webm](https://commons.wikimedia.org/wiki/File:How_to_properly_leg_press.webm) | trimmed to 6:24–6:37, scaled, muted, re-encoded |
 
 ## Exercises without a clip
 
